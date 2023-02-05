@@ -1,0 +1,24 @@
+.fake-cards {
+  width: auto;
+  display: flex;
+  justify-content: space-evenly;
+  @media (max-width: 650px) {
+    flex-wrap: wrap;
+  }
+  &:nth-child(1) {
+    .card {
+      margin-right: 20px;
+      @media (max-width: 650px) {
+        margin-right: 0;
+        margin-bottom: 15px;
+      }
+    }
+  }
+  .card {
+    width: 100%;
+    min-height: 40px;
+  }
+  .ml-icon {
+    margin-left: 24px;
+  }
+}

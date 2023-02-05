@@ -1,0 +1,69 @@
+  @import "src/assets/scss/main";
+  $blue: #545bc4;
+  .finance {
+    width: 100%;
+    min-height: 100%;
+    overflow: auto;
+    display: flex;
+    flex-direction: row;
+    @media (max-width: 1200px) {
+      flex-direction: column;
+    }
+    &__sidebar {
+      @media (max-width: 1200px) {
+        max-width: 100%;
+        border-radius: 0;
+        padding: 35px;
+      }
+      &-container {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: center;
+        flex-direction: column;
+        @media (max-width: 1200px) {
+          flex-direction: row;
+          max-width: 100%;
+        }
+        .logo {
+          height: auto;
+          font-size: 40px;
+          line-height: 20px;
+          padding-top: 30px;
+          @media (max-width: 1200px) {
+            padding-top: 0;
+            margin-right: 10px;
+          }
+        }
+      }
+    }
+    &__list {
+      flex-direction: column;
+      @media (max-width: 1200px) {
+        padding: 35px;
+        max-width: 100%;
+      }
+      &-top {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        height: auto;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding-bottom: 1.5rem;
+        @media (max-width: 1200px) {
+          flex-wrap: wrap;
+        }
+      }
+      &-file {
+        cursor: pointer;
+        > input[type='file'] {
+          display: none;
+        }
+      }
+      &-card {
+        width: 100%;
+        margin-top: 30px;
+      }
+    }
+  }

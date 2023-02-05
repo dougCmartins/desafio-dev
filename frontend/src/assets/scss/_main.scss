@@ -1,0 +1,106 @@
+  html,
+  #app,
+  main, body {
+    height: 100%;
+    width: 100%;
+    position: relative;
+  }
+  $font: 'Gilroy-Medium', sans-serif;
+  $shadow:  0 7px 30px -10px rgba(150,170,180,0.5);
+  $color: #4d61fc;
+  $white: #fff;
+  $dark: #2f3640 !important;
+  $transition: 100ms all linear 0s !important;
+  $none: 0 !important;
+  $radius: 10px !important;
+  $border-transparent: transparent !important;
+  $p-45px: 45px;
+  body {
+    background: #F9F9F9;
+    font-family: $font;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    box-shadow: $shadow;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index:  10;
+  }
+  .btn {
+    border: $none;
+    border-radius: $radius;
+    font-size: 16px;
+    color: $white;
+    transition: $transition;
+    cursor: pointer;
+    width: auto;
+    min-width: 89.66px;
+    min-height: 40px;
+    &:hover {
+      box-shadow: $shadow;
+      transform: translateY(-2px);
+    }
+    &-dark {
+      background-color: $dark;
+      border-color: $border-transparent;
+    }
+    &-primary {
+      background-color: $color;
+      border-color: $border-transparent;
+    }
+  }
+  .card {
+    width: 354px;
+    min-height: 288px;
+    background: #FFFFFF;
+    box-shadow: 0 14px 54px rgba(0, 0, 0, 0.03);
+    border: 1px solid #EFF0F6;
+    border-radius: 20px;
+    .icon {
+      color: #1E1E2D;
+    }
+  }
+  .p-45px {
+    padding: $p-45px;
+  }
+  article {
+    width: auto;
+  }
+  .container {
+    align-items: flex-end;
+    display: flex;
+    justify-content: flex-start;
+  }
+  .sidebar {
+    background: #FFFFFF;
+    max-width: 300px;
+    min-width: 230px;
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    border: 1px solid #EFF0F6;
+    border-top-right-radius: 20px;
+  }
+  strong {
+    color: #4f4f4f;
+  }
+  small,
+  span {
+    color: #A1A2AF;
+  }
+  i {
+    width: auto;
+    height: auto;
+    cursor: pointer;
+  }
+  th,
+  td {
+    color: #4f4f4f;
+  }
+  .table>thead th {
+    font-weight: bold;
+  }
+

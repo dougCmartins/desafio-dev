@@ -1,0 +1,56 @@
+.table {
+  height: auto;
+  color: #1E1E2D;
+}
+.card {
+  width: 100% !important;
+  border-radius: 20px;
+  padding: 20px;
+  &__client {
+    width: 100%;
+    padding: 15px;
+    &-info {
+      display: flex;
+      flex-wrap: wrap;
+      &-name {
+        margin-left: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0;
+        gap: 4px;
+      }
+      &-name,
+      &-icon {
+        width: auto;
+        height: auto;
+      }
+    }
+    strong {
+      font-size: 14px;
+      line-height: 16px;
+    }
+    small {
+      font-style: normal;
+      font-weight: 457;
+      font-size: 12px;
+      line-height: 14px;
+      color: #A1A2AF;
+    }
+    strong,
+    small {
+      width: auto;
+      height: auto;
+    }
+  }
+
+  .failed {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 7rem;
+    left: 0;
+    right: 0;
+  }
+}
