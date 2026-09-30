@@ -5,7 +5,7 @@
 - **Context Boundaries:** Serviços e Ações não devem conhecer ou mutar diretamente modelos de banco de dados pertencentes a domínios de negócio completamente distintos.
 - **Regra de Isolamento (Actions & Models):** Uma `Action` tem a responsabilidade de executar uma única tarefa de negócio e **só pode aceder aos Models do seu próprio domínio**.
 - **Proibido Cruzar Domínios Diretamente:** Uma `Action` **nunca** deve invocar uma `Action` pertencente a outro domínio.
-- **Orquestradores (Orchestrators):** Quando um fluxo de negócio exigir interação entre múltiplos domínios (ex: criar uma venda, deduzir o stock do produto e notificar o utilizador), utilize um **Orchestrator**. Estes devem residir numa diretoria dedicada (`Orchestrators`) e atuar exclusivamente como uma ponte de orquestração, chamando as respetivas Actions de cada domínio.
+- **Orquestradores (Orchestrator):** Quando um fluxo de negócio exigir interação entre múltiplos domínios (ex: criar uma venda, deduzir o stock do produto e notificar o utilizador), utilize um **Orchestrator**. Ele vive em `src/Domain/Orchestrator`, junto dos outros contextos. Não acessa model de domínio: só chama a Action de cada um, porque um domínio não entra no outro.
 - **DTO não importa Model:** A Data class não faz `use` de Eloquent Model e não declara `fromClient`, `fromUser`, `fromStore` nem qualquer `from{Model}`. Quem lê o model é a Action do próprio domínio. Ela monta `new ClientData(...)` com escalares ou com Data do mesmo contexto. `Data::from()` e `Data::validate()` recebem array de entrada, não o model.
 - **Contexto do problema, não do schema:** Tabela no banco não cria domínio. Não abra pasta nem DTO de User, Store, Transaction ou Operation só para aninhar a resposta de outro contexto. Se neste problema o dono e a loja são atributos do cliente, `ClientData` declara `name` e `store_name`. A Action lê a relação e copia a string. Transação e operação são outro contexto e ficam de fora até esse contexto ser o trabalho.
 
@@ -13,7 +13,7 @@
 
 ```
 src/
-├── Domain/
+└── Domain/
 │   ├── Sale/
 │   │   ├── Actions/
 │   │   │   └── CreateSale.php
@@ -43,18 +43,18 @@ src/
 │   │   ├── Models/
 │   │   │   └── Product.php
 │   │   └── ...
-│   └── User/
-│       ├── Actions/
-│       │   └── NotifyUser.php
-│       └── ...
-└── Orchestrators/
-    └── Checkout/
-        ├── Actions/
-        │   └── ProcessCheckout.php
-        ├── Data/
-        │   └── CheckoutResultData.php
-        └── Controllers/
-            └── CheckoutController.php
+│   ├── User/
+│   │   ├── Actions/
+│   │   │   └── NotifyUser.php
+│   │   └── ...
+│   └── Orchestrator/
+│       └── Checkout/
+│           ├── Actions/
+│           │   └── ProcessCheckout.php
+│           ├── Data/
+│           │   └── CheckoutResultData.php
+│           └── Controllers/
+│               └── CheckoutController.php
 ```
 
 ### 🎯 Exemplo: Action dentro do seu domínio
@@ -113,13 +113,13 @@ final class CreateSale
 
 declare(strict_types=1);
 
-namespace Orchestrators\Checkout\Actions;
+namespace Domain\Orchestrator\Checkout\Actions;
 
 use Domain\Product\Actions\DecrementStock;
 use Domain\Sale\Actions\CreateSale;
 use Domain\Sale\Data\CreateSaleData;
 use Domain\User\Actions\NotifyUser;
-use Orchestrators\Checkout\Data\CheckoutResultData;
+use Domain\Orchestrator\Checkout\Data\CheckoutResultData;
 
 final class ProcessCheckout
 {
@@ -624,7 +624,7 @@ A refatoração preserva a regra de negócio (validar cliente, criar venda, disp
 | **Controller** | `Domain/{X}/Controllers/` | Recebe a Data validada, chama a Action, devolve o envelope |
 | **Routes** | `Domain/{X}/Routes/api.php` | Rotas do domínio |
 | **Tests** | `Domain/{X}/Tests/` | Testes do domínio |
-| **Orchestrator** | `Orchestrators/{Y}/` | Coordena múltiplos domínios |
+| **Orchestrator** | `src/Domain/Orchestrator/{Y}/` | Ponte entre domínios: só chama Actions, sem Model próprio |
 
 Não existe camada `Resources/`. `JsonResource` não faz parte deste padrão.
 
@@ -659,7 +659,7 @@ Antes de criar arquivo novo, recuse o caminho abaixo. Estas são as falhas já v
 - [ ] Respostas usam `code` (SCREAMING_SNAKE_CASE)
 - [ ] Logs são estruturados (com array de contexto)
 - [ ] Testes ficam dentro do domínio (`Domain/{X}/Tests/`)
-- [ ] Orchestrators coordenam múltiplos domínios, sem Models próprios
+- [ ] O Orchestrator vive em `src/Domain/Orchestrator`, só chama Actions e não tem Model próprio
 - [ ] Raw SQL só é usado com placeholders e documentado
 
 Esse documento consolida as práticas de arquitetura backend adotadas em projetos Laravel com foco em DDD pragmático, tipagem estrita, separação de camadas e observabilidade — servindo como referência para qualquer desenvolvedor que queira aplicar esses padrões de forma consistente.
