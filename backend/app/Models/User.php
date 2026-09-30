@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Client\Client;
+use Domain\Client\Models\Client;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

@@ -18,15 +18,15 @@
           <th scope="row">
             <i class="fas fa-user"></i>
           </th>
-          <td> {{formatName(client.users.name)}}</td>
+          <td> {{formatName(client.name)}}</td>
           <td>{{ client.cpf }}</td>
-          <td>{{ formatName(client.stores.name) }}</td>
+          <td>{{ client.store_name ? formatName(client.store_name) : '' }}</td>
           <td>{{ client.card }}</td>
           <td>R$ {{ client.amount }}</td>
           <td class="text-center">
             <i data-bs-toggle="modal" :data-bs-target="[`#transactionBackdrop-${key}`]" class="fas fa-eye"/>
           </td>
-          <transaction-modal :identifier="key" :transactions="client.transactions"/>
+          <transaction-modal :identifier="key" :transactions="[]"/>
         </tr>
         </tbody>
       </table>

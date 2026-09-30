@@ -4,7 +4,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Transaction\TransactionController;
 use App\Http\Controllers\Operation\OperationController;
-use App\Http\Controllers\Client\ClientController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -18,4 +17,5 @@ use App\Http\Controllers\Client\ClientController;
 
 Route::resource('transactions', TransactionController::class)->except(['create', 'edit', 'destroy']);
 Route::resource('operations', OperationController::class)->except(['create', 'edit', 'destroy', 'store']);
-Route::resource('clients', ClientController::class)->except(['create', 'edit', 'destroy']);
+
+require base_path('src/Domain/Client/Routes/api.php');

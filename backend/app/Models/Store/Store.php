@@ -2,7 +2,7 @@
 
 namespace App\Models\Store;
 
-use App\Models\Client\Client;
+use Domain\Client\Models\Client;
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

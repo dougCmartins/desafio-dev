@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Transaction;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client\Client;
+use Domain\Client\Models\Client;
 use App\Models\Operation\Operation;
 use App\Models\Store\Store;
 use App\Models\Transaction\Transaction;

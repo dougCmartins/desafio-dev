@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Domain\Shared\Exceptions\DomainException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
@@ -37,5 +38,24 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+    /**
+     * @param \Illuminate\Http\Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function render($request, Throwable $e)
+    {
+        if ($e instanceof DomainException) {
+            return response()->json([
+                'data' => null,
+                'message' => $e->getMessage(),
+                'code' => $e->getErrorCode(),
+                'status_code' => $e->getHttpStatus(),
+                'errors' => [],
+            ], $e->getHttpStatus());
+        }
+
+        return parent::render($request, $e);
     }
 }
