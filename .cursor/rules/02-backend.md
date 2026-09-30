@@ -8,7 +8,7 @@ alwaysApply: false
 ## 1. Domain-Driven Design (DDD) & Context Boundaries
 - **Domínios Bem Definidos:** A aplicação deve ser estruturada com base em contextos de negócio (`Domains`), separando responsabilidades por domínio e não por tipos genéricos de ficheiro (MVC tradicional).
 - **Isolamento de Domínio (Actions & Models):** Cada operação de negócio deve residir numa `Action` ou handler dedicado de responsabilidade única. Uma `Action` só pode interagir com os modelos/entidades do seu próprio domínio.
-- **Orquestradores (Orchestrators):** Quando um fluxo de negócio exigir a coordenação entre múltiplos domínios, utilize um `Orchestrator` dedicado para gerir a sequência de chamadas, mantendo as `Actions` isoladas.
+- **Orquestradores (Orchestrator):** Quando um fluxo de negócio exigir a coordenação entre múltiplos domínios, utilize um `Orchestrator` em `src/Domain/Orchestrator`. Ele só chama as Actions de cada domínio. Uma Action não acessa outro domínio.
 - **DTOs (Data Transfer Objects):** Utilize DTOs estritos para encapsular payloads de requisições e transferência de dados entre camadas. Evite o tráfego de arrays primitivos ou dados não validados em profundidade.
 - **Proibido array no lugar de DTO:** Uma propriedade de DTO, relação aninhada ou coleção que cruza camadas não pode ser `array`. Estrutura que pertence a este contexto tem a sua própria Data class. Campo que é só um valor deste contexto fica escalar (`name`, `store_name` no cliente): não abra domínio vizinho só para evitar o array. Arrays de contexto em logs estruturados não são contrato de domínio e continuam permitidos.
 
