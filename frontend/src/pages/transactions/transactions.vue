@@ -26,7 +26,7 @@
           <td class="text-center">
             <i data-bs-toggle="modal" :data-bs-target="[`#transactionBackdrop-${key}`]" class="fas fa-eye"/>
           </td>
-          <transaction-modal :identifier="key" :transactions="[]"/>
+          <transaction-modal :identifier="key" :transactions="transactionsFor(client.id)"/>
         </tr>
         </tbody>
       </table>
@@ -52,11 +52,19 @@ export default  defineComponent({
 
     store.dispatch('operations/getAllOperations')
     store.dispatch('clients/getAllClients')
+    store.dispatch('transactions/getAllTransactions')
 
     clients = computed(() => store.state.clients);
+    const movements = computed(() => store.state.transactions.transactions);
+
+    const transactionsFor = (clientId: number) => {
+      const rows = movements.value || [];
+      return rows.filter((transaction: { client_id: number }) => transaction.client_id === clientId);
+    }
 
     return {
       clients,
+      transactionsFor,
     }
   },
   methods: {

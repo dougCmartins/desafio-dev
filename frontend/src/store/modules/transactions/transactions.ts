@@ -17,15 +17,14 @@ const actions = {
    async getAllTransactions ({ commit }: any) {
        let res = { data: [] }
        res = await  getHttpClient.get('transactions')
-       commit('setTransactions', res.data);
+       commit('setTransactions', res.data.data);
    },
-    async createTransaction ({ commit, dispatch }: any, payload: Array<TransactionFile>) {
-       let res = { data: [] }
+    async createTransaction ({ dispatch }: any, payload: Array<TransactionFile>) {
        if (payload) {
-           res = await getHttpClient.post('transactions', payload);
+           await getHttpClient.post('transactions', payload);
        }
 
-       commit('setTransactions', res.data);
+       await dispatch('getAllTransactions');
     }
 }
 

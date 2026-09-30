@@ -27,7 +27,7 @@ fi
 
 php artisan migrate --force
 
-if php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); exit(App\Models\Operation\Operation::query()->exists() ? 1 : 0);'; then
+if php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); exit(Domain\Transaction\Models\Operation::query()->exists() ? 1 : 0);'; then
   php artisan db:seed --force
 fi
 

@@ -71,20 +71,18 @@ export default defineComponent({
       reader.readAsText(file, 'utf-8')
     }
 
-    const sanitizeFile = (files: Array<TransactionFile>) => {
+    const sanitizeFile = async (files: Array<TransactionFile>) => {
       const regex = /\s+$/gm;
-      newFileReader = files.map((file: TransactionFile) => {
+
+      for (const file of files) {
         file.name = file.name.replace(regex, '')
         file.store_name = file.store_name.replace(regex, '')
         file.type = +file.type
         file.value = +file.value / 100
 
-        console.log(file);
-        store.dispatch('transactions/createTransaction', file)
-        store.dispatch('clients/getAllClients');
-      });
-
-      return newFileReader;
+        await store.dispatch('transactions/createTransaction', file)
+        await store.dispatch('clients/getAllClients');
+      }
     }
 
     const parseFileReader = (file: any) => {

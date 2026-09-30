@@ -25,8 +25,8 @@
                 <th scope="row">
                   <i class="fas fa-dollar-sign"></i>
                 </th>
-                <th scope="col">{{transaction.operations.description}}</th>
-                <th scope="col">{{transaction.operations.type_description}}</th>
+                <th scope="col">{{transaction.description}}</th>
+                <th scope="col">{{transaction.type_description}}</th>
                 <th scope="col">R$ {{transaction.value}}</th>
                 <th scope="col">R$ {{transaction.amount}}</th>
                 <th scope="col">{{dateNow(transaction.date_at)}}</th>

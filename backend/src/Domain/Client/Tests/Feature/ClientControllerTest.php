@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Domain\Client\Tests\Feature;
 
-use App\Models\Store\Store;
-use App\Models\User;
+use Domain\Client\Models\Store;
+use Domain\Client\Models\User;
 use Domain\Client\Models\Client;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

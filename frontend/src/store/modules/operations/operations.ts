@@ -16,7 +16,7 @@ const actions = {
    async getAllOperations ({ commit }: any) {
        let res = { data: [] }
        res = await  getHttpClient.get('operations')
-       commit('setOperations', res.data);
+       commit('setOperations', res.data.data);
    }
 }
 

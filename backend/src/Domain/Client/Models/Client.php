@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Domain\Client\Models;
 
-use App\Models\Store\Store;
-use App\Models\Transaction\Transaction;
-use App\Models\User;
+use Domain\Transaction\Models\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
