@@ -10,6 +10,7 @@ alwaysApply: false
 - **Isolamento de Domínio (Actions & Models):** Cada operação de negócio deve residir numa `Action` ou handler dedicado de responsabilidade única. Uma `Action` só pode interagir com os modelos/entidades do seu próprio domínio.
 - **Orquestradores (Orchestrators):** Quando um fluxo de negócio exigir a coordenação entre múltiplos domínios, utilize um `Orchestrator` dedicado para gerir a sequência de chamadas, mantendo as `Actions` isoladas.
 - **DTOs (Data Transfer Objects):** Utilize DTOs estritos para encapsular payloads de requisições e transferência de dados entre camadas. Evite o tráfego de arrays primitivos ou dados não validados em profundidade.
+- **Proibido array no lugar de DTO:** Uma propriedade de DTO, relação aninhada ou coleção que cruza camadas não pode ser `array`. Estrutura que pertence a este contexto tem a sua própria Data class. Campo que é só um valor deste contexto fica escalar (`name`, `store_name` no cliente): não abra domínio vizinho só para evitar o array. Arrays de contexto em logs estruturados não são contrato de domínio e continuam permitidos.
 
 ## 2. Camada de Entrada e Respostas da API (Envelope Pattern)
 - **Controladores Magros (Thin Controllers):** Os pontos de entrada HTTP (Controllers ou Handlers de rota) devem ser magros: recebem o DTO validado e delegam a execução diretamente para a `Action` ou `Orchestrator`.

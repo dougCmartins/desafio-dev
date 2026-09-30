@@ -6,6 +6,8 @@
 - **Regra de Isolamento (Actions & Models):** Uma `Action` tem a responsabilidade de executar uma única tarefa de negócio e **só pode aceder aos Models do seu próprio domínio**.
 - **Proibido Cruzar Domínios Diretamente:** Uma `Action` **nunca** deve invocar uma `Action` pertencente a outro domínio.
 - **Orquestradores (Orchestrators):** Quando um fluxo de negócio exigir interação entre múltiplos domínios (ex: criar uma venda, deduzir o stock do produto e notificar o utilizador), utilize um **Orchestrator**. Estes devem residir numa diretoria dedicada (`Orchestrators`) e atuar exclusivamente como uma ponte de orquestração, chamando as respetivas Actions de cada domínio.
+- **DTO não importa Model:** A Data class não faz `use` de Eloquent Model e não declara `fromClient`, `fromUser`, `fromStore` nem qualquer `from{Model}`. Quem lê o model é a Action do próprio domínio. Ela monta `new ClientData(...)` com escalares ou com Data do mesmo contexto. `Data::from()` e `Data::validate()` recebem array de entrada, não o model.
+- **Contexto do problema, não do schema:** Tabela no banco não cria domínio. Não abra pasta nem DTO de User, Store, Transaction ou Operation só para aninhar a resposta de outro contexto. Se neste problema o dono e a loja são atributos do cliente, `ClientData` declara `name` e `store_name`. A Action lê a relação e copia a string. Transação e operação são outro contexto e ficam de fora até esse contexto ser o trabalho.
 
 ### 📁 Estrutura de Pastas (DDD na prática)
 
@@ -80,19 +82,26 @@ final class CreateSale
             throw new InvalidSaleException('O valor da venda deve ser positivo.');
         }
 
-        $sale = DB::transaction(function () use ($data) {
+        $saleData = DB::transaction(function () use ($data) {
             $sale = Sale::create([
                 'client_id' => $data->client_id,
                 'amount'    => $data->amount,
                 'status'    => SaleStatus::Pending,
             ]);
 
-            SaleCreated::dispatch(SaleData::from($sale));
+            $saleData = new SaleData(
+                id: $sale->id,
+                client_id: $sale->client_id,
+                amount: (float) $sale->amount,
+                status: $sale->status,
+            );
 
-            return $sale;
+            SaleCreated::dispatch($saleData);
+
+            return $saleData;
         });
 
-        return SaleData::from($sale);
+        return $saleData;
     }
 }
 ```
@@ -142,9 +151,33 @@ final class ProcessCheckout
 
 ## 2. Estrutura de Código, Tipagem e Testes
 - **Strict Typing:** Declare obrigatoriamente tipos estritos no topo de todos os arquivos PHP (`declare(strict_types=1);`).
-- **DTOs & Controladores Magros (Skinny Controllers):** Utilize DTOs (Data Transfer Objects) para encapsular payloads de requisições e transferência de dados entre camadas. Evite passar arrays primitivos profundamente na lógica de negócio. O Controller apenas recebe o pedido, converte para DTO e delega a execução para a Action ou Orchestrator.
+- **DTOs & Controladores Magros (Skinny Controllers):** Utilize DTOs com `spatie/laravel-data`. Cada DTO é uma classe `final` que estende `Spatie\LaravelData\Data` e vive em `Domain/{X}/Data/`. Propriedades de entrada são `readonly`. O Controller recebe a Data já validada e delega para a Action ou Orchestrator. A resposta HTTP é o envelope; o miolo `data` é a Data (ou a lista de Data). Não crie Form Request e não crie `JsonResource`.
+- **Validação por tags, sem `rules()`:** Não escreva `function rules()`. Cada campo leva as tags do Spatie na propriedade: `Required`, `Max`, `Email`, `Min`, `IntegerType`, `StringType`, `Numeric`, `Nullable`, `DataCollectionOf`. Quem valida é `Data::validate()`. `from()` sozinho não valida. Regra customizada entra como tag importada `Rule` na mesma propriedade. Não crie `fromRequest`, `fromArray` nem `fromRouteId`: o controller chama `ShowClientData::validate(['id' => $id])`.
+- **Proibido array no lugar de DTO, e proibido DTO de outro contexto para fugir do array:** Estrutura aninhada que pertence a este contexto é uma Data class. Lista desse contexto é `DataCollection`, não `array`. Valor que é só um campo deste contexto fica escalar. `ClientData` não declara `?array $users` e também não declara `?UserData $users`: declara `string $name` e `?string $store_name`. Arrays de contexto em logs estruturados não são contrato de domínio e continuam permitidos.
 - **Enums e Ficheiros de Configuração:** Utilize `Enums` nativos do PHP para definir estados, tipos de dados estritos ou categorias. Variáveis de ambiente, *flags* e parametrizações de integração devem estar externalizados em ficheiros de configuração (`config/`).
 - **Testes no Escopo do Domínio:** Os testes automatizados (Pest/PHPUnit) não devem ficar isolados numa pasta global e genérica, mas sim organizados **dentro do escopo do seu próprio domínio**, garantindo que cada domínio é auto-testável e verdadeiramente modular.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Domain\Sale\Data;
+
+use Spatie\LaravelData\Attributes\Validation\IntegerType;
+use Spatie\LaravelData\Attributes\Validation\Min;
+use Spatie\LaravelData\Attributes\Validation\Required;
+use Spatie\LaravelData\Data;
+
+final class ShowSaleData extends Data
+{
+    public function __construct(
+        #[Required, IntegerType, Min(1)]
+        public readonly int $id,
+    ) {
+    }
+}
+```
 
 ### 🎯 Exemplo: Controller magro (Skinny Controller)
 
@@ -156,24 +189,33 @@ declare(strict_types=1);
 namespace Domain\Sale\Controllers;
 
 use Domain\Sale\Actions\CreateSale;
+use Domain\Sale\Actions\ShowSale;
 use Domain\Sale\Data\CreateSaleData;
-use Domain\Sale\Data\SaleData;
+use Domain\Sale\Data\ShowSaleData;
 use Illuminate\Http\JsonResponse;
 
 final class SaleController
 {
-    public function store(CreateSaleData $data, CreateSale $action): SaleData
+    public function store(CreateSaleData $data, CreateSale $action): JsonResponse
     {
-        // Controller não tem lógica. Só recebe o DTO (já validado) e delega.
-        return $action->handle($data);
+        return response()->json([
+            'data' => $action->handle($data),
+            'message' => 'Sale created successfully.',
+            'code' => 'SALE_CREATED',
+            'status_code' => 201,
+            'errors' => [],
+        ], 201);
     }
 
-    public function index(SaleIndexData $data): JsonResponse
+    public function show(string $id, ShowSale $action): JsonResponse
     {
-        // Em listagens, o Controller pode retornar uma coleção paginada.
-        return SaleData::collect(
-            Sale::query()->where('client_id', $data->client_id)->paginate()
-        )->toResponse(request());
+        return response()->json([
+            'data' => $action->handle(ShowSaleData::validate(['id' => $id])),
+            'message' => 'Sale found successfully.',
+            'code' => 'SALE_FOUND',
+            'status_code' => 200,
+            'errors' => [],
+        ]);
     }
 }
 ```
@@ -257,7 +299,7 @@ it('rejeita venda com valor inválido', function () {
 - **Eloquent First:** Priorize sempre o Eloquent ORM para consultas ao banco de dados e definição de relacionamentos. Mantenha a complexidade de consultas isolada em *Scopes* ou *Query Builders* dedicados ao domínio.
 - **Raw SQL Policy:** `DB::raw` ou consultas puras são estritamente restritas a agregações críticas de performance. Quando utilizadas, devem ser isoladas em repositórios/camadas de serviço, rigorosamente documentadas e utilizar placeholders (`?`) para prevenir SQL Injection.
 - **Mass Assignment Protection:** Defina explicitamente `$fillable` ou `$guarded` em todos os modelos Eloquent. Nunca deixe `$guarded = []` sem proteção explícita.
-- **Input Validation:** Valide rigorosamente todos os payloads de entrada utilizando `Form Requests` ou classes de validação centralizadas antes de qualquer processamento.
+- **Input Validation:** Valide o payload na Data class com as tags do Spatie na propriedade. Não escreva `function rules()` e não use Form Request. O controller não valida campo a campo: chama `Data::validate()` e entrega a Data à Action.
 
 ### 🎯 Exemplo: Model Eloquent com `$fillable`, `casts` e Scopes
 
@@ -337,7 +379,7 @@ final class SaleAggregateQuery
 ---
 
 ## 4. API, Respostas e Observabilidade
-- **API Resources:** Utilize `JsonResource` ou `API Resources` para formatar as respostas JSON retornadas aos clientes, desacoplando a estrutura do banco de dados da representação da API.
+- **Sem `JsonResource`:** A resposta não passa por `JsonResource` nem por pasta `Resources/`. O controller devolve o envelope com `response()->json()`. A chave `data` é a Data class (ou a lista de Data) que a Action devolveu. O formato público é o DTO, não as colunas do model.
 - **Padrão de Resposta da API (Envelope Pattern):** O frontend deve receber respostas estandardizadas (sucesso ou erro) através de um "Envelope". A estrutura JSON de resposta deve obrigatoriamente conter as seguintes chaves:
 
 ```json
@@ -418,41 +460,9 @@ public function render($request, Throwable $e): JsonResponse
 }
 ```
 
-### 🎯 Exemplo: API Resource + Envelope de sucesso
+### 🎯 Exemplo: Envelope de sucesso
 
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Domain\Sale\Resources;
-
-use Illuminate\Http\Resources\Json\JsonResource;
-
-final class SaleResource extends JsonResource
-{
-    public function toArray($request): array
-    {
-        return [
-            'id'         => $this->id,
-            'client_id'  => $this->client_id,
-            'amount'     => $this->amount,
-            'status'     => $this->status->value,
-            'created_at' => $this->created_at->toIso8601String(),
-        ];
-    }
-
-    public function with($request): array
-    {
-        return [
-            'message'     => 'Venda criada com sucesso.',
-            'code'        => 'SALE_CREATED',
-            'status_code' => 201,
-            'errors'      => [],
-        ];
-    }
-}
-```
+O controller monta o envelope. `data` é o retorno da Action (`SaleData`). Não há `SaleResource`.
 
 Resposta JSON resultante:
 
@@ -502,7 +512,12 @@ final class CreateSale
                 'amount'    => $sale->amount,
             ]);
 
-            return SaleData::from($sale);
+            return new SaleData(
+                id: $sale->id,
+                client_id: $sale->client_id,
+                amount: (float) $sale->amount,
+                status: $sale->status,
+            );
         } catch (\Throwable $e) {
             Log::error('Falha ao criar venda', [
                 'client_id' => $data->client_id,
@@ -577,12 +592,18 @@ public function store(Request $request)
 }
 ```
 
-**Depois (refatorado, com DTO + Action + Resource):**
+**Depois (refatorado, com DTO + Action + envelope):**
 
 ```php
-public function store(CreateSaleData $data, CreateSale $action): SaleResource
+public function store(CreateSaleData $data, CreateSale $action): JsonResponse
 {
-    return new SaleResource($action->handle($data));
+    return response()->json([
+        'data' => $action->handle($data),
+        'message' => 'Sale created successfully.',
+        'code' => 'SALE_CREATED',
+        'status_code' => 201,
+        'errors' => [],
+    ], 201);
 }
 ```
 
@@ -596,15 +617,29 @@ A refatoração preserva a regra de negócio (validar cliente, criar venda, disp
 |-------------------|-------------|-------------------|
 | **Model** | `Domain/{X}/Models/` | Entidade, relacionamentos, scopes |
 | **Action** | `Domain/{X}/Actions/` | Uma operação de negócio |
-| **Data (DTO)** | `Domain/{X}/Data/` | Contrato de entrada/saída, validação |
+| **Data (DTO)** | `Domain/{X}/Data/` | `spatie/laravel-data`: contrato de entrada/saída e validação (substitui Form Request) |
 | **Enum** | `Domain/{X}/Enums/` | Estados, tipos, categorias |
 | **Event** | `Domain/{X}/Events/` | Side effects entre módulos |
 | **Exception** | `Domain/{X}/Exceptions/` | Erros de domínio semânticos |
-| **Controller** | `Domain/{X}/Controllers/` | Orquestra DTO + Action |
-| **Resource** | `Domain/{X}/Resources/` | Formatação de resposta JSON |
+| **Controller** | `Domain/{X}/Controllers/` | Recebe a Data validada, chama a Action, devolve o envelope |
 | **Routes** | `Domain/{X}/Routes/api.php` | Rotas do domínio |
 | **Tests** | `Domain/{X}/Tests/` | Testes do domínio |
 | **Orchestrator** | `Orchestrators/{Y}/` | Coordena múltiplos domínios |
+
+Não existe camada `Resources/`. `JsonResource` não faz parte deste padrão.
+
+---
+
+## 6. O que não passa
+
+Antes de criar arquivo novo, recuse o caminho abaixo. Estas são as falhas já vistas neste projeto.
+
+- Data com `function rules()`, `fromRequest`, `fromArray` ou `fromRouteId`.
+- Data que importa Eloquent Model ou expõe `fromClient` / `fromUser` / `fromStore`.
+- `JsonResource` ou pasta `Resources/` para montar o JSON. O envelope já é a resposta; `data` é a Data.
+- `array` dentro de uma Data para esconder campos. E também um DTO de outro contexto (`UserData`, `StoreData`, `TransactionData`) criado só para não usar esse array.
+- Domínio novo porque a tabela existe. O contexto é o problema em curso. Dono e loja, neste problema, são `name` e `store_name` do cliente. Transação e operação só entram quando esse contexto for o trabalho.
+- Controller que consulta Model, valida na mão ou devolve o model cru.
 
 ---
 
@@ -612,9 +647,13 @@ A refatoração preserva a regra de negócio (validar cliente, criar venda, disp
 
 - [ ] Todo arquivo PHP tem `declare(strict_types=1);`
 - [ ] Actions são `final` e têm um único método `handle()`
-- [ ] DTOs são `final`, readonly e validam entrada
+- [ ] A Action lê o model e faz `new XData(...)`. A Data não importa Model
+- [ ] DTOs são `final`, estendem `Spatie\LaravelData\Data`, propriedades `readonly`, validação só por tags, sem `rules()` e sem Form Request
+- [ ] Entrada de rota ou body passa por `Data::validate()`, sem `fromRouteId`
+- [ ] Nenhuma Data usa `array` para estrutura aninhada. Lista do mesmo contexto é `DataCollection`. Campo deste contexto é escalar, não DTO de outro domínio
+- [ ] Não nasce domínio fora do problema em curso
 - [ ] Models têm `$fillable` ou `$guarded` explícitos
-- [ ] Controllers são magros — só delegam
+- [ ] Controllers são magros: delegam e devolvem o envelope. Sem `JsonResource`
 - [ ] Exceções de domínio herdam de `DomainException`
 - [ ] Handler global formata o envelope padrão
 - [ ] Respostas usam `code` (SCREAMING_SNAKE_CASE)
