@@ -51,6 +51,27 @@ final class ImportTransactionTest extends TestCase
         $this->assertSame(60.0, (float) Client::query()->first()->amount);
     }
 
+    public function testItKeepsSeparateStoresWhenTheSameCpfAppearsInAnotherStore(): void
+    {
+        $this->createOperation(1, 'Debit', 'Inflow', 1);
+
+        $this->postJson('/api/transactions', $this->payload(1, 100))->assertOk();
+
+        $response = $this->postJson('/api/transactions', array_merge($this->payload(1, 40), [
+            'store_name' => 'Branch',
+        ]));
+
+        $response->assertOk()
+            ->assertJsonPath('data.amount', 40);
+
+        $this->assertSame(2, Client::query()->count());
+        $this->assertSame(2, Store::query()->count());
+        $this->assertEqualsCanonicalizing(
+            ['Acme', 'Branch'],
+            Store::query()->pluck('name')->all(),
+        );
+    }
+
     public function testItReturnsNotFoundWhenTheOperationCodeDoesNotExist(): void
     {
         $response = $this->postJson('/api/transactions', $this->payload(99, 10));
@@ -65,6 +86,42 @@ final class ImportTransactionTest extends TestCase
             ]);
 
         $this->assertSame(0, Transaction::query()->count());
+    }
+
+    public function testItImportsTheWholeFileInOneRequest(): void
+    {
+        $this->createOperation(1, 'Debit', 'Inflow', 1);
+        $this->createOperation(2, 'Bill', 'Outflow', 0);
+
+        $response = $this->postJson('/api/transactions/import', [
+            $this->payload(1, 100),
+            $this->payload(2, 40),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('code', 'TRANSACTIONS_IMPORTED')
+            ->assertJsonCount(1, 'data.clients')
+            ->assertJsonCount(2, 'data.transactions')
+            ->assertJsonPath('data.clients.0.amount', 60);
+
+        $this->assertSame(2, Transaction::query()->count());
+        $this->assertSame(1, User::query()->count());
+    }
+
+    public function testItRollsBackTheFileWhenALineIsInvalid(): void
+    {
+        $this->createOperation(1, 'Debit', 'Inflow', 1);
+
+        $response = $this->postJson('/api/transactions/import', [
+            $this->payload(1, 100),
+            $this->payload(99, 40),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('code', 'OPERATION_NOT_FOUND');
+
+        $this->assertSame(0, Transaction::query()->count());
+        $this->assertSame(0, User::query()->count());
     }
 
     /**

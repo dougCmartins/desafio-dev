@@ -65,6 +65,48 @@ final class TransactionControllerTest extends TestCase
             ->assertJsonPath('data.type_description', 'Inflow');
     }
 
+    public function testItHidesTransactionsWithoutRemovingTheRow(): void
+    {
+        $operation = $this->createOperation(1, 'Debit', 'Inflow', 1);
+        $user = User::query()->create([
+            'name' => 'Ada',
+        ]);
+        $client = Client::query()->create([
+            'cpf' => '09620676017',
+            'card' => '4753****3153',
+            'user_id' => $user->id,
+            'amount' => 10,
+        ]);
+        $store = Store::query()->create([
+            'name' => 'Acme',
+            'owner_id' => $client->id,
+        ]);
+        $transaction = Transaction::query()->create([
+            'client_id' => $client->id,
+            'store_id' => $store->id,
+            'type' => $operation->code_operation,
+            'value' => 10,
+            'amount' => 10,
+            'date_at' => '2022-09-01',
+            'hour_at' => '15:30:00',
+        ]);
+
+        $response = $this->deleteJson('/api/transactions');
+
+        $response->assertOk()
+            ->assertJsonPath('code', 'TRANSACTIONS_HIDDEN')
+            ->assertJsonPath('data', []);
+
+        $this->assertSame(0, Transaction::query()->count());
+        $this->assertSame(1, Transaction::withTrashed()->count());
+        $this->assertNotNull(Transaction::withTrashed()->find($transaction->id)->deleted_at);
+        $this->assertSame(1, Client::query()->count());
+
+        $this->getJson('/api/transactions')
+            ->assertOk()
+            ->assertJsonPath('data', []);
+    }
+
     public function testItReturnsNotFoundWhenTheTransactionDoesNotExist(): void
     {
         $response = $this->getJson('/api/transactions/999');

@@ -7,10 +7,12 @@ namespace Domain\Transaction\Models;
 use Domain\Client\Models\Client;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 final class Transaction extends Model
 {
+    use SoftDeletes;
     protected $table = 'transactions';
 
     protected $primaryKey = 'id';

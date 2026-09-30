@@ -15,7 +15,12 @@ final class EnsureClient
 {
     public function handle(EnsureClientData $data): EnsuredClientData
     {
-        $client = Client::query()->where('cpf', $data->cpf)->first();
+        $client = Client::query()
+            ->where('cpf', $data->cpf)
+            ->whereHas('stores', function ($query) use ($data): void {
+                $query->where('name', $data->store_name);
+            })
+            ->first();
 
         if ($client === null) {
             $user = User::query()->create([

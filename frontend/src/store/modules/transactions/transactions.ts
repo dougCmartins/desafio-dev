@@ -1,4 +1,4 @@
-import getHttpClient from "@/http";
+import getHttpClient, {ApiEnvelope} from "@/http";
 import { toRaw } from "vue";
 import {TransactionFile} from "@/store/types/transactionType";
 const state = () => ({
@@ -15,16 +15,25 @@ const getters = {
 // actions
 const actions = {
    async getAllTransactions ({ commit }: any) {
-       let res = { data: [] }
-       res = await  getHttpClient.get('transactions')
-       commit('setTransactions', res.data.data);
+       const response = await getHttpClient.get<ApiEnvelope<unknown[]>>('transactions')
+       commit('setTransactions', response.data.data);
    },
-    async createTransaction ({ dispatch }: any, payload: Array<TransactionFile>) {
+    async importTransactions ({ commit }: any, rows: TransactionFile[]) {
+        const response = await getHttpClient.post<ApiEnvelope<{
+            clients: unknown[];
+            transactions: unknown[];
+        }>>('transactions/import', rows);
+        commit('clients/setClients', response.data.data.clients, { root: true });
+        commit('setTransactions', response.data.data.transactions);
+    },
+    async clearImportedData ({ commit }: any) {
+        await getHttpClient.delete<ApiEnvelope<unknown[]>>('transactions');
+        commit('setTransactions', []);
+    },
+    async createTransaction (_context: any, payload: TransactionFile) {
        if (payload) {
            await getHttpClient.post('transactions', payload);
        }
-
-       await dispatch('getAllTransactions');
     }
 }
 

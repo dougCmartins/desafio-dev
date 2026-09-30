@@ -1,11 +1,11 @@
   html,
   #app,
   main, body {
-    height: 100%;
+    min-height: 100%;
     width: 100%;
     position: relative;
   }
-  $font: 'Gilroy-Medium', sans-serif;
+  $font: sans-serif;
   $shadow:  0 7px 30px -10px rgba(150,170,180,0.5);
   $color: #4d61fc;
   $white: #fff;
@@ -16,13 +16,12 @@
   $border-transparent: transparent !important;
   $p-45px: 45px;
   body {
-    background: #F9F9F9;
+    background: #fff;
     font-family: $font;
     margin: 0;
     padding: 0;
   }
   header {
-    box-shadow: $shadow;
     width: 100%;
     position: sticky;
     top: 0;

@@ -18,7 +18,7 @@ class CreateTransactionTable extends Migration
             $table->unsignedBigInteger('client_id');
             $table->unsignedBigInteger('store_id');
             $table->integer('type');
-            $table->integer('value');
+            $table->decimal('value', 12, 2);
             $table->float('amount');
             $table->timestamp('date_at');
             $table->time('hour_at');

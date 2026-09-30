@@ -32,14 +32,6 @@ final class Store extends Model
         'updated_at',
     ];
 
-    /**
-     * @param mixed $value
-     */
-    public function setNameAttribute($value): void
-    {
-        $this->attributes['name'] = ucfirst(strtolower((string) $value));
-    }
-
     public function clients(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'owner_id', 'id');

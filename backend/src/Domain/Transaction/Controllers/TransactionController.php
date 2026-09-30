@@ -10,7 +10,9 @@ use Domain\Transaction\Data\ShowTransactionData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Domain\Orchestrator\Import\Actions\ImportTransaction;
+use Domain\Orchestrator\Import\Actions\ImportTransactions;
 use Domain\Orchestrator\Import\Data\ImportTransactionData;
+use Domain\Transaction\Actions\SoftDeleteTransactions;
 
 final class TransactionController
 {
@@ -31,6 +33,42 @@ final class TransactionController
             'data' => $action->handle(ShowTransactionData::validate(['id' => $id])),
             'message' => 'Transaction found successfully.',
             'code' => 'TRANSACTION_FOUND',
+            'status_code' => 200,
+            'errors' => [],
+        ]);
+    }
+
+    public function clear(SoftDeleteTransactions $action): JsonResponse
+    {
+        $action->handle();
+
+        return response()->json([
+            'data' => [],
+            'message' => 'Transactions hidden successfully.',
+            'code' => 'TRANSACTIONS_HIDDEN',
+            'status_code' => 200,
+            'errors' => [],
+        ]);
+    }
+
+    public function import(Request $request, ImportTransactions $action): JsonResponse
+    {
+        $lines = $request->all();
+        $rows = [];
+
+        foreach ($lines as $line) {
+            $rows[] = ImportTransactionData::validate($line);
+        }
+
+        $imported = $action->handle($rows);
+
+        return response()->json([
+            'data' => [
+                'clients' => $imported->clients,
+                'transactions' => $imported->transactions,
+            ],
+            'message' => 'Transactions imported successfully.',
+            'code' => 'TRANSACTIONS_IMPORTED',
             'status_code' => 200,
             'errors' => [],
         ]);

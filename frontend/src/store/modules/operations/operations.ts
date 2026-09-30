@@ -1,4 +1,4 @@
-import getHttpClient from "@/http";
+import getHttpClient, {ApiEnvelope} from "@/http";
 import { toRaw } from "vue";
 const state = () => ({
     operations: []
@@ -14,9 +14,8 @@ const getters = {
 // actions
 const actions = {
    async getAllOperations ({ commit }: any) {
-       let res = { data: [] }
-       res = await  getHttpClient.get('operations')
-       commit('setOperations', res.data.data);
+       const response = await getHttpClient.get<ApiEnvelope<unknown[]>>('operations')
+       commit('setOperations', response.data.data);
    }
 }
 

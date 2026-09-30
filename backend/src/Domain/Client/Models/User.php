@@ -24,14 +24,6 @@ final class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * @param mixed $value
-     */
-    public function setNameAttribute($value): void
-    {
-        $this->attributes['name'] = ucfirst(strtolower((string) $value));
-    }
-
     public function clients(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'user_id', 'id');
