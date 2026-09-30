@@ -33,7 +33,7 @@ A natureza do código vem do catálogo de operações, semeado no banco:
 | 8 | Recebimento DOC | Entrada |
 | 9 | Aluguel | Saída |
 
-A interface faz o parse da linha e envia um JSON já normalizado. A API não lê o arquivo. Ela encontra ou cria o dono, o cliente e a loja pelo CPF, aplica o sinal da operação ao saldo e grava a movimentação. Código desconhecido não grava nada.
+A interface faz o parse do arquivo e envia todas as linhas num JSON já normalizado. A API não lê o arquivo. Ela encontra ou cria o dono, o cliente e a loja, aplica o sinal da operação ao saldo e grava as movimentações. O mesmo CPF na mesma loja reutiliza o cliente. O mesmo CPF noutra loja cria outro cliente. Se uma linha do lote tiver um código desconhecido, nenhuma linha desse pedido fica gravada.
 
 ## Tecnologias
 
@@ -75,21 +75,25 @@ src/Domain
 
 ```mermaid
 flowchart LR
-    http[POST /api/transactions]
-    orch[ImportTransaction]
+    http["POST /api/transactions/import"]
+    batch[ImportTransactions]
+    line[ImportTransaction]
     client[EnsureClient]
     catalog[ResolveOperation]
     movement[RecordTransaction]
     balance[UpdateClientAmount]
 
-    http --> orch
-    orch --> client
-    orch --> catalog
-    orch --> movement
-    orch --> balance
+    http --> batch
+    batch --> line
+    line --> client
+    line --> catalog
+    line --> movement
+    line --> balance
 ```
 
-`ImportTransaction` corre dentro de uma transação de banco. Se o código da operação não existir, o cliente criado nessa mesma chamada é desfeito.
+`ImportTransactions` percorre o lote dentro de uma transação de banco e, no fim, devolve os clientes e as movimentações visíveis. Cada linha passa por `ImportTransaction`. Se o código da operação não existir, o lote inteiro é desfeito.
+
+`DELETE /api/transactions` não apaga a linha. `SoftDeleteTransactions` preenche `deleted_at`. A listagem e o detalhe ignoram essas linhas. O catálogo de operações não entra nesse soft delete.
 
 O saldo novo é o saldo atual menos o valor quando a operação é saída (`type` 0) e mais o valor quando é entrada (`type` 1).
 
@@ -135,9 +139,11 @@ Toda resposta de negócio tem esta forma:
 | --- | --- | --- | --- |
 | `GET` | `/clients` | `CLIENTS_LISTED` | Lista de clientes |
 | `GET` | `/clients/{id}` | `CLIENT_FOUND` | Um cliente |
-| `GET` | `/transactions` | `TRANSACTIONS_LISTED` | Lista de movimentações |
-| `GET` | `/transactions/{id}` | `TRANSACTION_FOUND` | Uma movimentação |
+| `GET` | `/transactions` | `TRANSACTIONS_LISTED` | Movimentações visíveis, sem soft delete |
+| `GET` | `/transactions/{id}` | `TRANSACTION_FOUND` | Uma movimentação visível |
+| `POST` | `/transactions/import` | `TRANSACTIONS_IMPORTED` | Importa o arquivo inteiro e devolve clientes e movimentações |
 | `POST` | `/transactions` | `TRANSACTION_RECORDED` | Importa uma linha já normalizada |
+| `DELETE` | `/transactions` | `TRANSACTIONS_HIDDEN` | Soft delete das movimentações visíveis |
 | `GET` | `/operations` | `OPERATIONS_LISTED` | Catálogo 1–9 |
 | `GET` | `/operations/{id}` | `OPERATION_FOUND` | Uma operação do catálogo |
 
@@ -173,9 +179,32 @@ A descrição da operação já vem achatada. Não há objeto aninhado de client
 }
 ```
 
+### Importar o arquivo
+
+O corpo é uma lista. `value` já está em reais. O campo de centavos do arquivo foi dividido por 100 antes deste pedido. `type` é o código CNAB, de 1 a 9. `date_at` aceita `YYYYMMDD` ou uma data normal. `hour_at` aceita `HHMMSS`.
+
+`data.clients` e `data.transactions` são as listas visíveis depois da gravação. A interface monta o ecrã com essa resposta.
+
+```bash
+curl -s -X POST http://localhost:8084/api/transactions/import \
+  -H 'Content-Type: application/json' \
+  -d '[
+    {
+      "cpf": "09620676017",
+      "card": "4753****3153",
+      "date_at": "20190301",
+      "hour_at": "153453",
+      "name": "JOÃO MACEDO",
+      "store_name": "BAR DO JOÃO",
+      "type": 1,
+      "value": 100
+    }
+  ]'
+```
+
 ### Importar uma linha
 
-`value` já está em reais. O campo de centavos do arquivo foi dividido por 100 antes deste pedido. `type` é o código CNAB, de 1 a 9. `date_at` aceita `YYYYMMDD` ou uma data normal. `hour_at` aceita `HHMMSS`.
+O `POST /api/transactions` grava um objeto só e devolve essa movimentação em `data`. O ecrã usa o lote, não esta rota.
 
 ```bash
 curl -s -X POST http://localhost:8084/api/transactions \
@@ -192,7 +221,15 @@ curl -s -X POST http://localhost:8084/api/transactions \
   }'
 ```
 
-A primeira linha com aquele CPF cria o dono, o cliente e a loja com saldo zero e depois aplica o movimento. A linha seguinte reutiliza o mesmo cliente. O nome da loja gravado é o de `store_name`, não o nome do dono.
+A primeira linha com aquele CPF e aquela loja cria o dono, o cliente e a loja com saldo zero e depois aplica o movimento. Outra linha com o mesmo par reutiliza o cliente. O nome da loja gravado é o de `store_name`, não o nome do dono.
+
+### Esconder movimentações
+
+```bash
+curl -s -X DELETE http://localhost:8084/api/transactions
+```
+
+A resposta traz `data` vazio e o código `TRANSACTIONS_HIDDEN`. Cada linha visível passa a ter `deleted_at`. `GET /api/transactions` deixa de as listar. O cliente, a loja e o catálogo de operações permanecem.
 
 ### Operação
 
@@ -215,7 +252,8 @@ A primeira linha com aquele CPF cria o dono, o cliente e a loja com saldo zero e
 | Cliente inexistente | 404 | `CLIENT_NOT_FOUND` |
 | Movimentação inexistente | 404 | `TRANSACTION_NOT_FOUND` |
 | Operação inexistente na consulta por id | 404 | `OPERATION_NOT_FOUND` |
-| Código CNAB fora do catálogo, no `POST` | 422 | `OPERATION_NOT_FOUND` |
+| Código CNAB fora do catálogo, numa linha ou no lote | 422 | `OPERATION_NOT_FOUND` |
+| Movimentação já escondida, na consulta por id | 404 | `TRANSACTION_NOT_FOUND` |
 
 ```json
 {
