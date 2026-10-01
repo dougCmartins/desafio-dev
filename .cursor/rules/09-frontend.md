@@ -12,7 +12,8 @@ alwaysApply: false
 
 ## 1. Tipagem e Segurança de Código
 - **TypeScript Obrigatório:** Utilize tipagem estrita em todo o código-fonte frontend (componentes, serviços, estados e stores) para garantir segurança, contratos claros de dados e melhor *intellisense*.
-- **Contratos Alinhados com o Backend:** As interfaces de dados no frontend devem refletir fielmente a estrutura recebida através do *Envelope Pattern* da API (mapeando `data`, `message`, `code` e `status_code`).
+- **Contratos Alinhados com o Backend:** O sucesso é a Data. A interface do frontend espelha esse corpo. `message` e `code` só aparecem no erro.
+- **Escopo de pasta:** O frontend não define domínio. A pasta usa o nome do domínio que já existe no backend. Ecrã, store, model e teste desse domínio ficam lá.
 
 ## 2. Componentização e Arquitetura de UI
 - **Componentização Granular (Smart/Dumb):** Divida interfaces complexas em componentes pequenos, coesos e reutilizáveis. Separe componentes de apresentação pura (que recebem props e emitem eventos) de componentes inteligentes (que gerem lógica de negócio e chamadas de API).

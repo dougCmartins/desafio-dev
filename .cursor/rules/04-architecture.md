@@ -453,6 +453,7 @@ export function useCart() {
 ## 5. Testes Automatizados (Vitest)
 - **Ferramenta Nativa:** A biblioteca padrão para testes unitários e de componentes no nosso ecossistema frontend é o **Vitest** (integrado nativamente com o Vite).
 - **Foco dos Testes:** Priorize testar a lógica de negócio encapsulada em *composables* e o comportamento dos componentes (ex: se as *props* são renderizadas corretamente e se os cliques disparam os *emits* esperados), evitando testar detalhes rígidos de implementação do framework.
+- **Teste no contexto:** O domínio nasce no backend. Ecrã, store, model e o teste Vitest ocupam a pasta com o mesmo nome. Não numa pasta `tests/` global, nem num contexto que o backend não tenha.
 
 ### 🎯 Exemplo: Teste de composable
 

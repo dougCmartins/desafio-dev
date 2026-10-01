@@ -24,7 +24,10 @@ alwaysApply: false
 ## 4. Gestão de Estado
 - Para estados globais, partilha de dados entre ecrãs e fluxos assíncronos complexos, utilize o **Pinia**.
 - Mantenha o fluxo de dados unidirecional: componentes emitem eventos (`emits`) para informar mudanças e recebem dados através de propriedades (`props`).
+- **Corpo da API:** A store lê `response.data`, que já é a Data. Não leia `response.data.data` à espera de um envelope que o controller não monta. O envelope (`message`, `code`) só aparece no erro.
+- **Mesmo contexto do backend:** O domínio nasce no backend. O frontend não abre contexto próprio. Ecrã, store e model desse domínio ficam na pasta com o mesmo nome de `backend/src/Domain/`.
 
 ## 5. Testes Automatizados (Vitest)
 - **Ferramenta Nativa:** A biblioteca padrão para testes unitários e de componentes no nosso ecossistema frontend é o **Vitest** (integrado nativamente com o Vite).
 - **Foco dos Testes:** Priorize testar a lógica de negócio encapsulada em *composables* e o comportamento dos componentes (ex: se as *props* são renderizadas corretamente e se os cliques disparam os *emits* esperados), evitando testar detalhes rígidos de implementação do framework.
+- **Teste no contexto:** O Vitest fica nessa mesma pasta do domínio que o backend já definiu. Não numa pasta `tests/` global. O foco continua a ser o comportamento da store e do componente.
