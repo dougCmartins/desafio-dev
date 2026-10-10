@@ -293,6 +293,7 @@ it('rejeita venda com valor inválido', function () {
 ---
 
 ## 3. Database & Security
+- **Arranque do projeto:** Todo projeto novo começa com Docker, Makefile na raiz e MySQL. O Compose sobe o MySQL e a aplicação. `make up`, `make migrate` e `make test` são o caminho. Sail, PostgreSQL, SQLite ou outro banco só entram se o pedido o disser.
 - **Eloquent First:** Priorize sempre o Eloquent ORM para consultas ao banco de dados e definição de relacionamentos. Mantenha a complexidade de consultas isolada em *Scopes* ou *Query Builders* dedicados ao domínio. A Action chama o scope ou a relação; não reescreve a query. Relação do mesmo domínio não vira Orchestrator.
 - **Raw SQL Policy:** `DB::raw` ou consultas puras são estritamente restritas a agregações críticas de performance. Quando utilizadas, devem ser isoladas em repositórios/camadas de serviço, rigorosamente documentadas e utilizar placeholders (`?`) para prevenir SQL Injection.
 - **Mass Assignment Protection:** Defina explicitamente `$fillable` ou `$guarded` em todos os modelos Eloquent. Nunca deixe `$guarded = []` sem proteção explícita.
@@ -627,6 +628,7 @@ Antes de criar arquivo novo, recuse o caminho abaixo. Estas são as falhas já v
 - `array` dentro de uma Data para esconder campos. E também um DTO de outro contexto (`UserData`, `StoreData`, `TransactionData`) criado só para não usar esse array.
 - Domínio novo porque a tabela existe, ou porque há uma Action só. O contexto é o problema em curso. Dono e loja, neste problema, são `name` e `store_name` do cliente. Transação e operação só entram quando esse contexto for o trabalho.
 - Controller que consulta Model, valida na mão ou devolve o model cru.
+- Projeto novo sem Docker e Makefile, ou com banco diferente de MySQL, quando ninguém pediu a troca.
 
 ---
 
@@ -648,5 +650,6 @@ Antes de criar arquivo novo, recuse o caminho abaixo. Estas são as falhas já v
 - [ ] Testes ficam dentro do domínio (`Domain/{X}/Tests/`)
 - [ ] O Orchestrator vive em `src/Domain/Orchestrator`, só chama Actions e não tem Model próprio
 - [ ] Raw SQL só é usado com placeholders e documentado
+- [ ] Projeto novo tem Docker, Makefile e MySQL, salvo pedido explícito em contrário
 
 Esse documento consolida as práticas de arquitetura backend adotadas em projetos Laravel com foco em DDD pragmático, tipagem estrita, separação de camadas e observabilidade — servindo como referência para qualquer desenvolvedor que queira aplicar esses padrões de forma consistente.

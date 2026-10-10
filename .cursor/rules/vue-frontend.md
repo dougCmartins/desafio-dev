@@ -5,6 +5,9 @@ alwaysApply: false
 
 # 💻 Frontend Standards (Vue 3 / TypeScript)
 
+## Ambiente do projeto
+- Projeto novo começa com Docker, Makefile na raiz e MySQL. O frontend entra no mesmo `docker-compose.yml` e nos alvos do Makefile. Não se troca o banco nem se arranca o projeto fora desse Docker, salvo pedido explícito.
+
 ## 1. Ecossistema Vue 3 e TypeScript
 - **Composition API:** O padrão absoluto para a construção de componentes é a Composition API, utilizando a tag `<script setup lang="ts">`.
 - **TypeScript Obrigatório:** Utilize TypeScript de forma rigorosa para garantir a segurança de tipos, interfaces claras e um melhor *intellisense*, reduzindo erros em tempo de execução.
